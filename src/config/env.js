@@ -9,10 +9,20 @@ for (const key of required) {
   }
 }
 
+// Parse allowed origins from environment variable
+const parseAllowedOrigins = () => {
+  if (process.env.ALLOWED_ORIGINS) {
+    return process.env.ALLOWED_ORIGINS.split(',').map(url => url.trim());
+  }
+  // Default for development
+  return ['http://localhost:5173'];
+};
+
 export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT) || 4000,
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+  allowedOrigins: parseAllowedOrigins(), // NEW
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET || 'dev_access_secret',
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev_refresh_secret',
