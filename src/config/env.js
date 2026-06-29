@@ -15,14 +15,17 @@ const parseAllowedOrigins = () => {
     return process.env.ALLOWED_ORIGINS.split(',').map(url => url.trim());
   }
   // Default for development
-  return ['http://localhost:5173'];
+  return [
+    'http://localhost:5173',
+    'https://project-7rb68.vercel.app' // ADD YOUR VERCEL URL HERE
+  ];
 };
 
 export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT) || 4000,
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
-  allowedOrigins: parseAllowedOrigins(), // NEW
+  allowedOrigins: parseAllowedOrigins(),
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET || 'dev_access_secret',
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev_refresh_secret',

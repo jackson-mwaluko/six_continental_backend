@@ -48,7 +48,8 @@ export const register = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: publicUser(user) });
 });
 
-// POST /api/auth/login
+// controllers/authController.js
+
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -71,15 +72,36 @@ export const login = asyncHandler(async (req, res) => {
   const { accessToken, refreshToken } = await issueTokens(user);
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
 
+  // --- UPDATE COOKIE SETTINGS ---
+  const isProduction = env.nodeEnv === 'production';
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
-    secure: env.nodeEnv === 'production',
-    sameSite: 'lax',
+    secure: true, // Always true for Render (HTTPS)
+    sameSite: 'none', // CRITICAL: Must be 'none' for cross-domain
     maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: '/'
   });
 
   await logActivity({ userId: user.id, action: 'LOGIN', entity: 'Auth', ipAddress: req.ip });
   res.json({ success: true, data: { user: publicUser(user), accessToken } });
+});
+
+// Also update logout to clear the cookie properly
+export const logout = asyncHandler(async (req, res) => {
+  const token = req.cookies?.refreshToken || req.body?.refreshToken;
+  if (token) {
+    await prisma.refreshToken.updateMany({ where: { token }, data: { revoked: true } });
+  }
+  
+  // Clear cookie with same settings
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    path: '/'
+  });
+  
+  res.json({ success: true, message: 'Logged out' });
 });
 
 // POST /api/auth/refresh
@@ -106,13 +128,21 @@ export const refresh = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { accessToken } });
 });
 
-// POST /api/auth/logout
 export const logout = asyncHandler(async (req, res) => {
   const token = req.cookies?.refreshToken || req.body?.refreshToken;
   if (token) {
     await prisma.refreshToken.updateMany({ where: { token }, data: { revoked: true } });
   }
-  res.clearCookie('refreshToken');
+  
+  // --- CLEAR COOKIE WITH SAME SETTINGS ---
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    domain: '.onrender.com',
+    path: '/'
+  });
+  
   res.json({ success: true, message: 'Logged out' });
 });
 
