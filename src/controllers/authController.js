@@ -86,24 +86,6 @@ export const login = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { user: publicUser(user), accessToken } });
 });
 
-// Also update logout to clear the cookie properly
-export const logout = asyncHandler(async (req, res) => {
-  const token = req.cookies?.refreshToken || req.body?.refreshToken;
-  if (token) {
-    await prisma.refreshToken.updateMany({ where: { token }, data: { revoked: true } });
-  }
-  
-  // Clear cookie with same settings
-  res.clearCookie('refreshToken', {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-    path: '/'
-  });
-  
-  res.json({ success: true, message: 'Logged out' });
-});
-
 // POST /api/auth/refresh
 export const refresh = asyncHandler(async (req, res) => {
   const token = req.cookies?.refreshToken || req.body?.refreshToken;
